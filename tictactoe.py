@@ -28,3 +28,43 @@ for turn in range(9):
     player = "O" if player == "X" else "X"
 else:
     print("Draw match")
+
+
+
+
+Output:
+
+Player X (1-9): 1
+X    
+     
+     
+Player O (1-9): 5
+X    
+  O  
+     
+Player X (1-9): 9
+X    
+  O  
+    X
+Player O (1-9): 8
+X    
+  O  
+  O X
+Player X (1-9): 2
+X X  
+  O  
+  O X
+Player O (1-9): 3
+X X O
+  O  
+  O X
+Player X (1-9): 7
+X X O
+  O  
+X O X
+Player O (1-9): 4
+X X O
+O O  
+X O X
+Player X (1-9): 6
+Game over
