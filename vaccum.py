@@ -8,3 +8,12 @@ for i in range(2):
         print(f"Cleaning {loc}...")
         state[loc] = 0
         cost += 1
+
+# Output:
+
+# Location (A/B): a
+# A (0:Clean, 1:Dirty): 1
+# B (0:Clean, 1:Dirty): 0
+# Vacuum at A. State: {'A': 1, 'B': 0}
+# Cleaning A...
+# Vacuum at A. State: {'A': 0, 'B': 0}
