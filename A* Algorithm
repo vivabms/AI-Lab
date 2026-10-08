@@ -1,0 +1,66 @@
+import heapq, copy
+
+def h(s, g):
+    return sum(1 for i in range(3) for j in range(3) if s[i][j] != 0 and s[i][j] != g[i][j])
+
+def get_moves(s):
+    r, c = next((r, c) for r in range(3) for c in range(3) if s[r][c] == 0)
+    for dr, dc in [(-1,0), (1,0), (0,-1), (0,1)]:
+        if 0 <= r+dr < 3 and 0 <= c+dc < 3:
+            ns = copy.deepcopy(s)
+            ns[r][c], ns[r+dr][c+dc] = ns[r+dr][c+dc], ns[r][c]
+            yield ns
+
+def solve(start, goal):
+    pq = [(h(start, goal), 0, start, [])]
+    visited = set()
+    while pq:
+        f, g, curr, path = heapq.heappop(pq)
+        if curr == goal:
+            for step, s in enumerate(path + [curr]):
+                print(f"Step {step}:")
+                for r in s: print(*r)
+                print()
+            return
+        visited.add(tuple(map(tuple, curr)))
+        for nxt in get_moves(curr):
+            if tuple(map(tuple, nxt)) not in visited:
+                heapq.heappush(pq, (g + 1 + h(nxt, goal), g + 1, nxt, path + [curr]))
+
+get_in = lambda msg: [list(map(int, input(f"{msg} row {i+1}: ").split())) for i in range(3)]
+try:
+    start = get_in("Start")
+    goal = get_in("Goal")
+    solve(start, goal)
+except Exception:
+    print("Running with default values:")
+    solve([[1,2,3],[0,4,6],[7,5,8]], [[1,2,3],[4,5,6],[7,8,0]])
+
+Output:
+
+Start row 1: 4
+Start row 2: 5
+Start row 3: 7
+Goal row 1: 7
+Goal row 2: 7
+Goal row 3: 9
+Running with default values:
+Step 0:
+1 2 3
+0 4 6
+7 5 8
+
+Step 1:
+1 2 3
+4 0 6
+7 5 8
+
+Step 2:
+1 2 3
+4 5 6
+7 0 8
+
+Step 3:
+1 2 3
+4 5 6
+7 8 0
