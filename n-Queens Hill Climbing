@@ -1,0 +1,71 @@
+import random
+
+class State:
+    def __init__(self, c=None):
+        if c is None:
+            self.c = list(range(4))
+            random.shuffle(self.c)
+        else:
+            self.c = list(c)
+
+def cost(board):
+    attacks = 0
+    n = len(board.c)
+    for i in range(n):
+        for j in range(i + 1, n):
+            if board.c[i] == board.c[j] or abs(board.c[i] - board.c[j]) == abs(i - j):
+                attacks += 1
+    return attacks
+
+def get_neighbors(state):
+    neighbors = []
+    n = len(state.c)
+    for i in range(n):
+        for j in range(i + 1, n):
+            new_c = list(state.c)
+            new_c[i], new_c[j] = new_c[j], new_c[i]
+            neighbors.append(State(new_c))
+    return neighbors
+
+def hill_climbing():
+    current = State()
+    current_cost = cost(current)
+    
+    while True:
+        neighbors = get_neighbors(current)
+        if not neighbors:
+            break
+            
+        neighbor_costs = [(n, cost(n)) for n in neighbors]
+        best_neighbor, best_cost = min(neighbor_costs, key=lambda x: x[1])
+        
+        if best_cost >= current_cost:
+            break
+        current = best_neighbor
+        current_cost = best_cost
+        
+    return current, current_cost
+
+state, final_cost = hill_climbing()
+print("Final State:", state.c)
+print("Attacking pairs (Cost):", final_cost)
+
+
+Output:
+
+enter the board size (number of queens):4
+enter the row positon of queen of col  0
+0
+enter the row positon of queen of col  1
+3
+enter the row positon of queen of col  2
+2
+enter the row positon of queen of col  3
+1
+the initial state is [0, 3, 2, 1]
+the cost of initial state is 7
+local minimum reached
+cost of the final state = 5
+the final state is [0, 3, 1, 1]
+
+
