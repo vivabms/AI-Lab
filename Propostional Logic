@@ -1,0 +1,93 @@
+import itertools
+def IMPLIES(a, b):
+    return not a or b
+def pl_true(sentence, model):
+    return sentence(model)
+
+def tt_entails(KB, alpha):
+    symbols = ['P', 'Q', 'R']
+    return tt_check_all(KB, alpha, symbols, {})
+
+def tt_check_all(KB, alpha, symbols, model):
+    if not symbols:
+        kb_true = all(pl_true(sentence, model) for sentence in KB)
+        if kb_true:
+            return pl_true(alpha, model)
+        else            return True 
+    else:
+        P = symbols[0]
+        rest = symbols[1:]
+       
+        model_true = model.copy()
+        model_true[P] = True
+       
+        model_false = model.copy()
+        model_false[P] = False
+       
+        return (tt_check_all(KB, alpha, rest, model_true) and
+                tt_check_all(KB, alpha, rest, model_false))
+
+kb_sentences = [
+    lambda m: IMPLIES(m['Q'], m['P']),
+    lambda m: IMPLIES(m['P'], not m['Q']),
+    lambda m: m['Q'] or m['R']
+]
+
+# Queries
+query_ii  = lambda m: m['R']                      # R
+query_iii = lambda m: IMPLIES(m['R'], m['P'])      # R -> P
+query_iv  = lambda m: IMPLIES(m['Q'], m['R'])      # Q -> R
+
+print("=" * 65)
+print(f"{'P':<6}{'Q':<6}{'R':<6}{'Q->P':<10}{'P->~Q':<10}{'Q v R':<10}{'KB status'}")
+print("=" * 65)
+
+symbols = ['P', 'Q', 'R']
+valid_models = []
+
+for combination in itertools.product([True, False], repeat=3):
+    model = dict(zip(symbols, combination))
+
+    s1 = kb_sentences[0](model)
+    s2 = kb_sentences[1](model)
+    s3 = kb_sentences[2](model)
+  
+    kb_is_true = s1 and s2 and s3
+   
+    if kb_is_true:
+        valid_models.append(model)
+        status = "TRUE (Model)"
+    else:
+        status = "False"
+       
+    print(f"{str(model['P']):<6}{str(model['Q']):<6}{str(model['R']):<6}"
+          f"{str(s1):<10}{str(s2):<10}{str(s3):<10}{status}")
+
+print("=" * 65)
+print(f"Models where KB is True: {valid_models}\n")
+print("--- Entailment Results ---")
+print(f"ii) Does KB entail R?       -> {tt_entails(kb_sentences, query_ii)}")
+print(f"iii) Does KB entail R -> P? -> {tt_entails(kb_sentences, query_iii)}")
+print(f"iv) Does KB entail Q -> R?  -> {tt_entails(kb_sentences, query_iv)}")
+
+
+Output:
+
+=================================================================
+P     Q     R     Q->P      P->~Q     Q v R     KB status
+=================================================================
+True  True  True  True      False     True      False
+True  True  False True      False     True      False
+True  False True  True      True      True      TRUE (Model)
+True  False False True      True      False     False
+False True  True  False     True      True      False
+False True  False False     True      True      False
+False False True  True      True      True      TRUE (Model)
+False False False True      True      False     False
+=================================================================
+Models where KB is True: [{'P': True, 'Q': False, 'R': True}, {'P': False, 'Q': False, 'R': True}]
+
+--- Entailment Results ---
+ii) Does KB entail R?       -> True
+iii) Does KB entail R -> P? -> False
+iv) Does KB entail Q -> R?  -> True
