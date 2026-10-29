@@ -1,0 +1,71 @@
+import random
+import math
+
+class State:
+    def __init__(self):
+        self.c = []
+        self.cost = 0
+
+def cost(board, n):
+    count = 0
+    i = 0
+    while i <= n - 2:
+        j = i + 1
+        while j <= n - 1:
+            if (board.c[i] == board.c[j]) or (abs(board.c[i] - board.c[j]) == j - i):
+                count += 1
+            j += 1
+        i += 1
+    return count
+
+def simulated(current, n):
+    current.cost = cost(current, n)
+    print("The cost of initial state is:", current.cost)
+   
+    t = 10000
+    while t > 0 and current.cost != 0:
+        c = random.randint(0, len(current.c) - 1)
+       
+        r = random.randint(0, len(current.c) - 1)
+        while r == current.c[c]:
+            r = random.randint(0, len(current.c) - 1)
+       
+
+        neighbour = State()
+        neighbour.c = current.c[:]
+        neighbour.c[c] = r
+        neighbour.cost = cost(neighbour, n)
+
+        delta = neighbour.cost - current.cost
+       
+        if delta < 0:
+            current = neighbour
+        else:
+            rng = random.random()
+            try:
+                exponent = -delta / t
+              
+                if rng < math.exp(exponent):
+                    current = neighbour
+            except OverflowError:
+                pass
+               
+        t = t - 1
+
+    print("The final cost is:", current.cost)
+    return current.c  
+n = int(input("Enter the board size (number of queens): "))
+i = 0
+current = State()
+
+while i < n:
+    r = int(input(f"Enter the row position of queen of col {i}: "))
+    if r < 0 or r > n - 1:
+        print(f"Invalid input! Please enter a value between 0 and {n-1}.")
+    else:
+        current.c.append(r)
+        i += 1
+
+print("The initial state is:", current.c)
+final_solution = simulated(current, n)
+print("The final state is:", final_solution)
