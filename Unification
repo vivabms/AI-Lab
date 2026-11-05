@@ -1,0 +1,293 @@
+FAILURE = "FAILURE"
+NIL = []        
+def is_variable(t):
+    return isinstance(t, str) and t[0].islower()
+
+
+def is_compound(t):
+    return isinstance(t, tuple)       
+
+
+def occurs_in(var, term):
+    if var == term:
+        return True
+    if is_compound(term):
+        return any(occurs_in(var, arg) for arg in term[1:])
+    return False
+
+
+def replace(term, var, value)
+    if term == var:
+        return value
+    if is_compound(term):
+        return (term[0],) + tuple(replace(a, var, value) for a in term[1:])
+    return term
+
+
+def apply_subst(term, subst):
+    for value, var in subst:
+        term = replace(term, var, value)
+    return term
+
+
+def compose(subst, s):
+    """SUBST = SUBST U S  (S is also applied to the values already in SUBST)."""
+    updated = [(apply_subst(value, s), var) for value, var in subst]
+    return updated + s
+
+def unify(psi1, psi2):
+    if not is_compound(psi1) or not is_compound(psi2):
+        if psi1 == psi2:                   
+            return NIL
+        if is_variable(psi1):                    
+            return FAILURE if occurs_in(psi1, psi2) else [(psi2, psi1)]
+        if is_variable(psi2):                    
+            return FAILURE if occurs_in(psi2, psi1) else [(psi1, psi2)]
+        return FAILURE                            
+    if psi1[0] != psi2[0]:
+        return FAILURE
+
+    if len(psi1) != len(psi2):
+        return FAILURE
+
+    subst = NIL
+    args1, args2 = list(psi1[1:]), list(psi2[1:])
+
+    # Step 5: unify argument by argument
+    for i in range(len(args1)):
+        s = unify(args1[i], args2[i])             # (a)
+        if s == FAILURE:                          # (b)
+            return FAILURE
+        if s != NIL:                              # (c)
+            for j in range(i + 1, len(args1)):    # apply S to remaining args
+                args1[j] = apply_subst(args1[j], s)
+                args2[j] = apply_subst(args2[j], s)
+            subst = compose(subst, s)
+
+    return subst
+
+
+# ---------------------------------------------------------------- parsing / printing
+def parse(text):
+    """Turn 'Knows(John,x)' into ('Knows', 'John', 'x')."""
+    text = text.replace(" ", "")
+    term, pos = _parse(text, 0)
+    if pos != len(text):
+        raise ValueError("Unexpected characters in expression")
+    return term
+
+
+def _parse(s, i):
+    j = i
+    while j < len(s) and s[j] not in "(),":
+        j += 1
+    name = s[i:j]
+    if not name:
+        raise ValueError("Missing name in expression")
+    if j < len(s) and s[j] == "(":
+        args = []
+        j += 1
+        while True:
+            arg, j = _parse(s, j)
+            args.append(arg)
+            if j < len(s) and s[j] == ",":
+                j += 1
+            elif j < len(s) and s[j] == ")":
+                j += 1
+                break
+            else:
+                raise ValueError("Missing ')' in expression")
+        return (name, *args), j
+    return name, j
+
+
+def to_string(term):
+    if is_compound(term):
+        return term[0] + "(" + ", ".join(to_string(a) for a in term[1:]) + ")"
+    return term
+
+
+def show_result(e1, e2):
+    psi1, psi2 = parse(e1), parse(e2)
+    print(f"\nExpression 1 : {to_string(psi1)}")
+    print(f"Expression 2 : {to_string(psi2)}")
+    result = unify(psi1, psi2)
+    if result == FAILURE:
+        print("Result       : Unification FAILED")
+    elif result == NIL:
+        print("Result       : Already identical, SUBST = { }")
+    else:
+        print("Result       : Unification SUCCESSFUL")
+        print("SUBST        : {" + ", ".join(f"{to_string(v)}/{x}" for v, x in result) + "}")
+        print("Unified form :", to_string(apply_subst(psi1, result)))
+
+
+
+
+Output:
+FAILURE = "FAILURE"
+NIL = []                      # empty substitution
+
+
+# ---------------------------------------------------------------- helpers
+def is_variable(t):
+    return isinstance(t, str) and t[0].islower()
+
+
+def is_compound(t):
+    return isinstance(t, tuple)           # (functor, arg1, arg2, ...)
+
+
+def occurs_in(var, term):
+    """Occur check: does variable `var` appear inside `term`?"""
+    if var == term:
+        return True
+    if is_compound(term):
+        return any(occurs_in(var, arg) for arg in term[1:])
+    return False
+
+
+def replace(term, var, value):
+    """Replace every occurrence of variable `var` in `term` by `value`."""
+    if term == var:
+        return value
+    if is_compound(term):
+        return (term[0],) + tuple(replace(a, var, value) for a in term[1:])
+    return term
+
+
+def apply_subst(term, subst):
+    """Apply a whole substitution to a term."""
+    for value, var in subst:
+        term = replace(term, var, value)
+    return term
+
+
+def compose(subst, s):
+    """SUBST = SUBST U S  (S is also applied to the values already in SUBST)."""
+    updated = [(apply_subst(value, s), var) for value, var in subst]
+    return updated + s
+
+
+# ---------------------------------------------------------------- algorithm
+def unify(psi1, psi2):
+    # Step 1: either expression is a variable or a constant
+    if not is_compound(psi1) or not is_compound(psi2):
+        if psi1 == psi2:                          # (a) identical
+            return NIL
+        if is_variable(psi1):                     # (b) psi1 is a variable
+            return FAILURE if occurs_in(psi1, psi2) else [(psi2, psi1)]
+        if is_variable(psi2):                     # (c) psi2 is a variable
+            return FAILURE if occurs_in(psi2, psi1) else [(psi1, psi2)]
+        return FAILURE                            # (d) different constants
+
+    # Step 2: predicate / function symbols must be the same
+    if psi1[0] != psi2[0]:
+        return FAILURE
+
+    # Step 3: number of arguments must be the same
+    if len(psi1) != len(psi2):
+        return FAILURE
+
+    # Step 4: initialise SUBST
+    subst = NIL
+    args1, args2 = list(psi1[1:]), list(psi2[1:])
+
+    # Step 5: unify argument by argument
+    for i in range(len(args1)):
+        s = unify(args1[i], args2[i])             # (a)
+        if s == FAILURE:                          # (b)
+            return FAILURE
+        if s != NIL:                              # (c)
+            for j in range(i + 1, len(args1)):    # apply S to remaining args
+                args1[j] = apply_subst(args1[j], s)
+                args2[j] = apply_subst(args2[j], s)
+            subst = compose(subst, s)
+
+    # Step 6
+    return subst
+
+
+# ---------------------------------------------------------------- parsing / printing
+def parse(text):
+    """Turn 'Knows(John,x)' into ('Knows', 'John', 'x')."""
+    text = text.replace(" ", "")
+    term, pos = _parse(text, 0)
+    if pos != len(text):
+        raise ValueError("Unexpected characters in expression")
+    return term
+
+
+def _parse(s, i):
+    j = i
+    while j < len(s) and s[j] not in "(),":
+        j += 1
+    name = s[i:j]
+    if not name:
+        raise ValueError("Missing name in expression")
+    if j < len(s) and s[j] == "(":
+        args = []
+        j += 1
+        while True:
+            arg, j = _parse(s, j)
+            args.append(arg)
+            if j < len(s) and s[j] == ",":
+                j += 1
+            elif j < len(s) and s[j] == ")":
+                j += 1
+                break
+            else:
+                raise ValueError("Missing ')' in expression")
+        return (name, *args), j
+    return name, j
+
+
+def to_string(term):
+    if is_compound(term):
+        return term[0] + "(" + ", ".join(to_string(a) for a in term[1:]) + ")"
+    return term
+
+
+def show_result(e1, e2):
+    psi1, psi2 = parse(e1), parse(e2)
+    print(f"\nExpression 1 : {to_string(psi1)}")
+    print(f"Expression 2 : {to_string(psi2)}")
+    result = unify(psi1, psi2)
+    if result == FAILURE:
+        print("Result       : Unification FAILED")
+    elif result == NIL:
+        print("Result       : Already identical, SUBST = { }")
+    else:
+        print("Result       : Unification SUCCESSFUL")
+        print("SUBST        : {" + ", ".join(f"{to_string(v)}/{x}" for v, x in result) + "}")
+        print("Unified form :", to_string(apply_subst(psi1, result)))
+
+
+# ---------------------------------------------------------------- main
+if __name__ == "__main__":
+    print("=== Unification in First Order Logic ===")
+
+    # Sample test cases
+    samples = [
+        ("Knows(John, x)", "Knows(John, Jane)"),
+        ("Knows(John, x)", "Knows(y, Mother(y))"),
+        ("Knows(John, x)", "Knows(Jane, y)"),          # fails: John != Jane
+        ("P(x)", "P(f(x))"),                           # fails: occur check
+        ("Knows(John, x)", "Likes(John, x)"),          # fails: different predicates
+        ("P(x, y)", "P(y, A)"),                        # chained substitution
+    ]
+    for a, b in samples:
+        show_result(a, b)
+
+    # Your own input
+    print("\n--- Try your own (press Enter on an empty line to quit) ---")
+    while True:
+        e1 = input("\nExpression 1: ").strip()
+        if not e1:
+            break
+        e2 = input("Expression 2: ").strip()
+        try:
+            show_result(e1, e2)
+        except ValueError as err:
+            print("Invalid input:", err)
+
