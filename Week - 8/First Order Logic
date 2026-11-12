@@ -1,0 +1,74 @@
+# Forward Chaining in First Order Logic
+
+# Initial Knowledge Base (Facts)
+KB = {
+    ("American", "Robert"),
+    ("Missile", "T1"),
+    ("Owns", "A", "T1"),
+    ("Enemy", "A", "America")
+}
+
+def add(fact):
+    if fact not in KB:
+        KB.add(fact)
+        print("Derived:", fact)
+        return True
+    return False
+
+# Forward Chaining
+while True:
+    new = False
+
+    # Rule 1: Missiles are weapons
+    for f in list(KB):
+        if f[0] == "Missile":
+            new |= add(("Weapon", f[1]))
+
+    # Rule 2: Enemies of America are hostile
+    for f in list(KB):
+        if f[0] == "Enemy" and f[2] == "America":
+            new |= add(("Hostile", f[1]))
+
+    # Rule 3: Robert sells missiles owned by Country A
+    for f in list(KB):
+        if f[0] == "Missile":
+            m = f[1]
+            for own in list(KB):
+                if own[0] == "Owns" and own[2] == m:
+                    new |= add(("Sells", "Robert", m, own[1]))
+
+    # Rule 4: An American selling weapons to hostile nations is criminal
+    for a in list(KB):
+        if a[0] == "American":
+            p = a[1]
+
+            for w in list(KB):
+                if w[0] == "Weapon":
+                    q = w[1]
+
+                    for s in list(KB):
+                        if s[0] == "Sells" and s[1] == p and s[2] == q:
+
+                            for h in list(KB):
+                                if h[0] == "Hostile" and h[1] == s[3]:
+                                    new |= add(("Criminal", p))
+
+    if not new:
+        break
+
+# Display result
+print("\nQuery: Is Robert a criminal?")
+if ("Criminal", "Robert") in KB:
+    print("YES! Robert is a criminal.")
+else:
+    print("NO! The query cannot be proved.")
+
+Output:
+
+Derived: ('Weapon', 'T1')
+Derived: ('Hostile', 'A')
+Derived: ('Sells', 'Robert', 'T1', 'A')
+Derived: ('Criminal', 'Robert')
+
+Query: Is Robert a criminal?
+YES! Robert is a criminal.
